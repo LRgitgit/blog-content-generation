@@ -1,5 +1,24 @@
 # blog-content-generation
 
+graph TD;
+    IntentionsGeneration --> TitlesGeneration;
+    TitlesGeneration --> PlansGeneration;
+    PlansGeneration --> XtrosGeneration;
+    PlansGeneration --> ParagraphsGeneration;
+    XtrosGeneration --> ParagraphsGeneration;
+    ParagraphsGeneration --> YouTubeIntegration;
+    YouTubeIntegration --> ImagesGeneration;
+    PlansGeneration --> StablePromptsGeneration;
+    ParagraphsGeneration --> BoldKeywordsGeneration;
+    ParagraphsGeneration --> Backlinking;
+    ParagraphsGeneration --> CTAGeneration;
+    ImagesGeneration --> ImagesMetadataGeneration;
+    ImagesGeneration --> UploadtoWordPress;
+    UploadtoWordPress --> MetaDescriptionGeneration;
+    MetaDescriptionGeneration --> DriveBackup;
+    DriveBackup --> SaveData;
+
+
 # Automatic Content Generation for WordPress
 
 This repository contains a workflow for automatically generating content for WordPress articles. The primary goal is to streamline the content creation process by leveraging AI models and APIs to generate article ideas, titles, paragraphs, and images, and then publish them directly to a WordPress site.
