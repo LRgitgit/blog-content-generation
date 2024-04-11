@@ -1,5 +1,6 @@
 # blog-content-generation
 
+```mermaid
 graph TD;
     IntentionsGeneration --> TitlesGeneration;
     TitlesGeneration --> PlansGeneration;
@@ -17,8 +18,7 @@ graph TD;
     UploadtoWordPress --> MetaDescriptionGeneration;
     MetaDescriptionGeneration --> DriveBackup;
     DriveBackup --> SaveData;
-
-
+```
 # Automatic Content Generation for WordPress
 
 This repository contains a workflow for automatically generating content for WordPress articles. The primary goal is to streamline the content creation process by leveraging AI models and APIs to generate article ideas, titles, paragraphs, and images, and then publish them directly to a WordPress site.
