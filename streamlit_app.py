@@ -12,16 +12,21 @@ st.set_page_config(
 )
 
 def generate_plan(input) -> list[str] : 
-    return [input + str(i) for i in range(5)]
+    st.session_state["title"] = generate_title(st.session_state["search_intent"])
+    generate_plan_parts(st.session_state["search_intent"])
+
+def generate_plan_parts(_input) : 
+     for idx in range(5) : 
+          st.session_state[f"header{idx}"] = _input + str(idx)
 
 def generate_title(input) -> str: 
-    return input
+    return "Title : " + input
 
 def generate_intro() :
-    pass
+    st.session_state["intro"] = "This is intro"
 
 def generate_outro() : 
-    pass
+    st.session_state["outro"] = "This is outro"
 
 def publish_article() : 
     pass
@@ -29,14 +34,16 @@ def publish_article() :
 def article_layout() :
     pass
 
-def gen_random_key() -> int :
-    return random.randint(0,1000000)
 
 if __name__ == "__main__" : 
 
-    # if "article_dic" not in st.session_state : 
-    #     print("Entry init dic")
-    #     # st.session_state["article_dic"] = {"search_intent":""}
+    #Init of dynamic elements
+    if "intro" not in st.session_state : 
+            st.session_state["intro"] = ""
+    
+    if "outro" not in st.session_state : 
+            st.session_state["outro"] = ""
+
     #     st.session_state["article_dic"] = {"search_intent":"",
 
     #                         "title":"",
@@ -76,25 +83,36 @@ if __name__ == "__main__" :
 
     st.text_input("Search Intent eg. 'How to grow carrots ?'", key="search_intent", help="The target search intent you want the article to address. Ideally formulated as a question. Can also take precisions to orient the plan generation on specific angles.")
 
-    if st.button("Generate Plan") :
-        # st.session_state["article_dic"]["search_intent"] = search_intent
-        temp_input = st.session_state["search_intent"]
-        st.session_state["title"] = generate_title(temp_input)
-        st.session_state["plan"] = generate_plan(temp_input)
-        st.session_state["intro"] = generate_intro()
-        st.session_state["outro"] = generate_outro()
-        st.session_state["paragraphs"] = [""]*len(st.session_state["plan"])
-        print("Session state : ", st.session_state)
-        st.divider()
+    col1, col2, col3 = st.columns(3, gap="small")
+    with col1 : 
+        gen_plan = st.button("Generate Plan")
+        
+    with col2 : 
+         gen_xtros = st.button("Generate intro and outro")
+    
+    with col3 : 
+         gen_plan_parts = st.button("Generate plan parts")
+    
+    st.divider()
+
+    if gen_plan : 
+        generate_plan(st.session_state["search_intent"])
+    
+    if gen_xtros : 
+        generate_intro()
+        generate_outro()
+
+    if gen_plan_parts : 
+         generate_plan_parts()
 
     st.text_input(label="Introduction", value="Introduction", key="intro_title")
     st.text_area(label="a", value=st.session_state["intro"], label_visibility="collapsed", key="intro")
 
     st.divider()
 
-    for (idx, header), paragraph in zip(enumerate(st.session_state["plan"]), st.session_state["paragraphs"]) : 
-        st.text_input(f"Header {idx}", value = header, key=f"header{idx}")
-        st.text_area(label = "a", value=paragraph, label_visibility="collapsed", key=f"par{idx}")
+    for idx in range(sum([1 for i in st.session_state if "header" in i])) : 
+        st.text_input(f"Header {idx}", key=f"header{idx}")
+        st.text_area(label = "a", label_visibility="collapsed", key=f"par{idx}")
         st.divider()
 
     st.text_input(label="Conclusion", value="Conclusion", key="outro_title")
@@ -105,7 +123,9 @@ if __name__ == "__main__" :
 
     publish = st.button("Publish", on_click=publish_article)
 
-    print(draft)
+    # print(draft)
+
+    [print(k, st.session_state[k]) for k in sorted(st.session_state)]
 
     # needed output dict : 
 
