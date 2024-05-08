@@ -28,6 +28,10 @@ def generate_intro() :
 def generate_outro() : 
     st.session_state["outro"] = "This is outro"
 
+def generate_paragraphs() : 
+     for idx, header in enumerate(sorted([i for i in st.session_state if "header" in i])) : 
+          st.session_state[f"par{idx}"] = f"This is paragraphs for plan part {idx}"
+
 def publish_article() : 
     pass
 
@@ -91,7 +95,7 @@ if __name__ == "__main__" :
          gen_xtros = st.button("Generate intro and outro")
     
     with col3 : 
-         gen_plan_parts = st.button("Generate plan parts")
+         gen_paragraphs = st.button("Generate paragraphs")
     
     st.divider()
 
@@ -103,8 +107,8 @@ if __name__ == "__main__" :
         generate_intro()
         generate_outro()
 
-    if gen_plan_parts : 
-         generate_plan_parts()
+    if gen_paragraphs : 
+         generate_paragraphs()
 
     st.text_input(label="Introduction", value="Introduction", key="intro_title")
     st.text_area(label="a", value=st.session_state["intro"], label_visibility="collapsed", key="intro")
