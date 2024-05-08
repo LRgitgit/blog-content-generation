@@ -95,6 +95,7 @@ if __name__ == "__main__" :
     
     st.divider()
 
+    #Buttons click actions, could be replaced with on_click func to go further
     if gen_plan : 
         generate_plan(st.session_state["search_intent"])
     
