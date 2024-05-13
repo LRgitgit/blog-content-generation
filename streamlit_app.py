@@ -21,6 +21,15 @@ st.set_page_config(
    initial_sidebar_state="expanded",
 )
 
+def undo_action() : 
+    # Method should work but bc of a multiple reloads (3) at each state change, try to consider the last one is not functioning
+    # Idk from where it comes
+    st.session_state = st.session_state["previous_state"]
+
+def delete_paragraph(idx) : 
+    idx_to_remove = st.session_state["headers_idx_order"].index(idx)
+    st.session_state["headers_idx_order"].pop(idx_to_remove)
+
 def generate_plan(input) -> list[str] : 
     generate_title(st.session_state["search_intent"])
     generate_plan_parts(st.session_state["search_intent"])
@@ -159,6 +168,7 @@ def init_paragraphs() :
         st.text_input(f"Header {idx}", key=f"header{idx}")
         
         key_points_list = get_keypoints()
+        # st_tags is bit buggy when a lot (~>10 are instanciated), causing some of them to not be charged and even sometimes be defined as None into st.session_state
         st_tags(label="Key points to adress", value=key_points_list, key=f"par{idx}_tags")
         
         col_text, col_buttons = st.columns(2)
@@ -233,7 +243,8 @@ if __name__ == "__main__" :
 
     #                         "slug":"",
     #                         }
-
+    st.session_state["previous_state"] = st.session_state
+    st.button("Undo", on_click=undo_action)
     client = init_open_ai_client()
 
     # Add an undo button that replace the current st.session_state with the stored previous one
