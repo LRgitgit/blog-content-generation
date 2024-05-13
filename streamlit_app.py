@@ -27,8 +27,10 @@ def generate_plan(input) -> list[str] :
 
 
 def generate_plan_parts(_input) : 
-     for idx in range(5) : 
-          st.session_state[f"header{idx}"] = _input + str(idx)
+     # The 0 idx should be left free to allow add paragraph button to work in intro
+    for idx in range(0, 5) : 
+        st.session_state[f"header{idx}"] = _input + str(idx)
+    st.session_state["headers_idx_order"] = list(range(0, 5))
 
 
 def generate_title(input) -> str: 
@@ -59,13 +61,6 @@ def modify_xtro(xtro) :
 
 def get_keypoints() : 
     return ["option " + str(i) for i in range(5)]
-
-
-def add_paragraph(idx) :
-     # The paragraphs order must be stored in a list 
-     # The new paragraph idx is placed at the right place in this list 
-     # Init_paragraphs, preview and all order_based functionnalities should account for this order
-     pass
 
 
 def publish_article() : 
@@ -120,9 +115,10 @@ def init_intro() :
         col_intro, col_buttons = st.columns(2)
         with col_intro : 
             st.text_area(label="a", value=st.session_state["intro"], label_visibility="hidden", key="intro")
+            st.button("Add paragraph", on_click=add_paragraph, kwargs={"idx":-1}, key=f"add_par_button_{-1}")
         with col_buttons : 
             st.text_area(label="Modification instructions", key=f"prompt_modif_intro")
-            st.button("Modify paragraph", on_click=modify_xtro, kwargs={"xtro":"intro"}, key=f"modify_button_intro")
+            st.button("Modify paragraph", on_click=modify_xtro, kwargs={"xtro":"intro"},key="modif_par_button_intro")
 
 def init_outro() :
     if "outro" in st.session_state : 
@@ -137,9 +133,10 @@ def init_outro() :
         col_outro, col_buttons = st.columns(2)
         with col_outro : 
             st.text_area(label="a", value=st.session_state["outro"], label_visibility="hidden", key="outro")
+            
         with col_buttons : 
             st.text_area(label="Modification instructions", key=f"prompt_modif_outro")
-            st.button("Modify paragraph", on_click=modify_xtro, kwargs={"xtro":"outro"}, key=f"modify_button_outro")
+            st.button("Modify paragraph", on_click=modify_xtro, kwargs={"xtro":"outro"}, key="modif_par_button_outro")
 
     with st.expander("Image to use") : 
         if "uploaded_files" in st.session_state : 
@@ -147,10 +144,11 @@ def init_outro() :
             st.text_input(label="Image description", key="img_end_description")
         else : 
                 st.write("No uploaded image to use")
+    
 
 def init_paragraphs() :
-    st.button("Add paragraph", on_click=add_paragraph, kwargs={"idx":-1}, key=f"add_par_button_-1")
-    for idx in range(sum([1 for i in st.session_state if "header" in i])) : 
+    # for idx in range(sum([1 for i in st.session_state if "header" in i])) : 
+    for idx in st.session_state["headers_idx_order"] : 
         with st.expander("Image to use") :
             if "uploaded_files" in st.session_state :  
                 st.selectbox(label="Image to use", options=[None] + [img.name for img in st.session_state["uploaded_files"]], key=f"img_par{idx}")
@@ -169,8 +167,17 @@ def init_paragraphs() :
             st.button("Add paragraph", on_click=add_paragraph, kwargs={"idx":idx}, key=f"add_par_button_{idx}")
         with col_buttons : 
             st.text_area(label="Modification instructions", key=f"prompt_modif_par{idx}")
-            st.button("Modify paragraph", on_click=modify_paragraph, kwargs={"idx":idx}, key=f"modify_button_{idx}")
+            st.button("Modify paragraph", on_click=modify_paragraph, kwargs={"idx":idx}, key=f"modif_par_button_{idx}")
         st.divider()
+
+def add_paragraph(idx) :
+    new_idx = max(st.session_state["headers_idx_order"]) + 1
+    if idx >= 0 : 
+        insert_idx = st.session_state["headers_idx_order"].index(idx)
+        st.session_state["headers_idx_order"].insert(insert_idx + 1, new_idx)
+    else : 
+        # Account for the intro add paragraph button which have index -1, not very elegant yet functional for now
+        st.session_state["headers_idx_order"].insert(0, new_idx)
 
 @st.cache_resource
 def init_open_ai_client() : 
@@ -228,6 +235,8 @@ if __name__ == "__main__" :
     #                         }
 
     client = init_open_ai_client()
+
+    # Add an undo button that replace the current st.session_state with the stored previous one
 
     with st.sidebar : 
         init_sidebar()
@@ -302,7 +311,7 @@ if __name__ == "__main__" :
             st.image([obj for obj in st.session_state["uploaded_files"] if obj.name == st.session_state["img_end"]])
 
     with tab_advices : 
-        st.markdown("# Tab to display writing advices : \n * Keywords to use (per paragraph, with volumes ?) \n * Concurrents analysis : \n \t * Theme adressed by concurrents on subsequent topic/keywords \n \t * Themes not adressed by concurrent and that make original content \n * Possible angles to use for this topic")
+        st.markdown("# Tab to display writing advices : \n * Keywords to use (per paragraph, with volumes ?) \n * Concurrents analysis : \n \t * Theme adressed by concurrents on subsequent topic/keywords \n \t * Themes not adressed by concurrent and that make original content \n * Possible angles to use for this topic \n * Images gathered around the theme, scraped and directly usable \n * Scraped sentences and/or paragraphs that answers the best for each paragraphs (even a posible small search engine on the vector DB once it's calculated)")
 
     with tab_upload : 
         st.file_uploader("Upload image", accept_multiple_files=True, key="uploaded_files")
