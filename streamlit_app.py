@@ -25,38 +25,152 @@ def generate_plan(input) -> list[str] :
     generate_title(st.session_state["search_intent"])
     generate_plan_parts(st.session_state["search_intent"])
 
+
 def generate_plan_parts(_input) : 
      for idx in range(5) : 
           st.session_state[f"header{idx}"] = _input + str(idx)
 
+
 def generate_title(input) -> str: 
     st.session_state["title"] = "This is the title"
+
 
 def generate_intro() :
     st.session_state["intro"] = "This is intro"
 
+
 def generate_outro() : 
     st.session_state["outro"] = "This is outro"
+
 
 def generate_paragraphs() : 
      for idx, header in enumerate(sorted([i for i in st.session_state if "header" in i])) : 
           st.session_state[f"paragraph{idx}"] = f"This is paragraphs for plan part {idx}"
 
+
 def modify_paragraph(idx) :
     print("Arguments : ", idx) 
     st.session_state[f"paragraph{idx}"] = st.session_state[f"prompt_modif_par{idx}"]
 
+
 def modify_xtro(xtro) : 
     st.session_state[xtro] = st.session_state[f"prompt_modif_{xtro}"]
+
 
 def get_keypoints() : 
     return ["option " + str(i) for i in range(5)]
 
-def preview_aticle_in_markdown() : 
-    pass
+
+def add_paragraph(idx) :
+     # The paragraphs order must be stored in a list 
+     # The new paragraph idx is placed at the right place in this list 
+     # Init_paragraphs, preview and all order_based functionnalities should account for this order
+     pass
+
 
 def publish_article() : 
     pass
+
+### App layout functions
+def init_sidebar() : 
+    st.text_input(label="Language to generate", key="language", help="Desired output language for text generation")
+    st.selectbox(label="Model to use", options=["gpt-3.5-turbo-0125", "gpt-4-turbo"], index = 0, key="model")
+
+    st.text_input("OpenAI API key", key="openai_api_key", help="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key")
+    st.text_input(label="WordPress API Key", key="wp_api_key")
+
+def init_gen_buttons() : 
+    col1, col2, col3, col4 = st.columns(4, gap="small")
+    with col1 : 
+        gen_plan = st.button("Generate Plan")
+    with col2 : 
+        # The way to display key points is TBD, in par text_area or in different text_area to keep them when paragraph is generated
+        gen_key_points = st.button("Generate content points")
+        
+    with col3 : 
+        gen_paragraphs = st.button("Generate paragraphs")
+    
+    with col4 : 
+        gen_xtros = st.button("Generate intro and outro")
+
+    return gen_plan, gen_xtros, gen_key_points, gen_paragraphs
+
+def init_title() : 
+    if "title" in st.session_state : 
+        with st.expander("Image to use") : 
+            if "uploaded_files" in st.session_state : 
+                st.selectbox(label="Image to use", options=[None] + [img.name for img in st.session_state["uploaded_files"]], key="img_title")
+                st.text_input(label="Image description", key="img_title_description")
+            else : 
+                st.write("No uploaded image to use")
+
+        st.text_area(label="Title", value=st.session_state["title"], key="title")
+
+def init_intro() : 
+    if "intro" in st.session_state : 
+        with st.expander("Image to use") : 
+            if "uploaded_files" in st.session_state : 
+                st.selectbox(label="Image to use", options=[None] + [img.name for img in st.session_state["uploaded_files"]], key="img_intro")
+                st.text_input(label="Image description", key="img_intro_description")
+            else : 
+                st.write("No uploaded image to use")
+
+        st.text_input(label="Introduction", value="Introduction", key="intro_title")
+
+        col_intro, col_buttons = st.columns(2)
+        with col_intro : 
+            st.text_area(label="a", value=st.session_state["intro"], label_visibility="hidden", key="intro")
+        with col_buttons : 
+            st.text_area(label="Modification instructions", key=f"prompt_modif_intro")
+            st.button("Modify paragraph", on_click=modify_xtro, kwargs={"xtro":"intro"}, key=f"modify_button_intro")
+
+def init_outro() :
+    if "outro" in st.session_state : 
+        with st.expander("Image to use") : 
+            if "uploaded_files" in st.session_state : 
+                st.selectbox(label="Image to use", options=[None] + [img.name for img in st.session_state["uploaded_files"]], key=f"img_outro")
+                st.text_input(label="Image description", key="img_outro_description")
+            else : 
+                st.write("No uploaded image to use")
+
+        st.text_input(label="Conclusion", value="Conclusion", key="outro_title")
+        col_outro, col_buttons = st.columns(2)
+        with col_outro : 
+            st.text_area(label="a", value=st.session_state["outro"], label_visibility="hidden", key="outro")
+        with col_buttons : 
+            st.text_area(label="Modification instructions", key=f"prompt_modif_outro")
+            st.button("Modify paragraph", on_click=modify_xtro, kwargs={"xtro":"outro"}, key=f"modify_button_outro")
+
+    with st.expander("Image to use") : 
+        if "uploaded_files" in st.session_state : 
+            st.text_input(label="Image to use", key="img_end")
+            st.text_input(label="Image description", key="img_end_description")
+        else : 
+                st.write("No uploaded image to use")
+
+def init_paragraphs() :
+    st.button("Add paragraph", on_click=add_paragraph, kwargs={"idx":-1}, key=f"add_par_button_-1")
+    for idx in range(sum([1 for i in st.session_state if "header" in i])) : 
+        with st.expander("Image to use") :
+            if "uploaded_files" in st.session_state :  
+                st.selectbox(label="Image to use", options=[None] + [img.name for img in st.session_state["uploaded_files"]], key=f"img_par{idx}")
+                st.text_input(label="Image description", key=f"img_par{idx}_description")
+            else : 
+                st.write("No uploaded image to use")
+
+        st.text_input(f"Header {idx}", key=f"header{idx}")
+        
+        key_points_list = get_keypoints()
+        st_tags(label="Key points to adress", value=key_points_list, key=f"par{idx}_tags")
+        
+        col_text, col_buttons = st.columns(2)
+        with col_text :
+            st.text_area(label = "a", label_visibility="hidden", key=f"paragraph{idx}")
+            st.button("Add paragraph", on_click=add_paragraph, kwargs={"idx":idx}, key=f"add_par_button_{idx}")
+        with col_buttons : 
+            st.text_area(label="Modification instructions", key=f"prompt_modif_par{idx}")
+            st.button("Modify paragraph", on_click=modify_paragraph, kwargs={"idx":idx}, key=f"modify_button_{idx}")
+        st.divider()
 
 @st.cache_resource
 def init_open_ai_client() : 
@@ -116,32 +230,15 @@ if __name__ == "__main__" :
     client = init_open_ai_client()
 
     with st.sidebar : 
-        st.text_input(label="Language to generate", key="language", help="Desired output language for text generation")
-        st.selectbox(label="Model to use", options=["gpt-3.5-turbo-0125", "gpt-4-turbo"], index = 0)
+        init_sidebar()
 
-        st.text_input("OpenAI API key", key="openai_api_key", help="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key")
-        st.text_input(label="WordPress API Key", key="wp_api_key")
-
-    tab_modif, tab_preview, tab_upload = st.tabs(["Modifications", "Preview", "Upload Images"])
+    tab_modif, tab_preview, tab_advices, tab_upload = st.tabs(["Modifications", "Preview", "Writing advices", "Upload Images"])
 
     with tab_modif : 
         st.text_input("Search Intent eg. 'How to grow carrots ?'", key="search_intent", help="The target search intent you want the article to address. Ideally formulated as a question. Can also take precisions to orient the plan generation on specific angles.")
-
-        col1, col2, col3, col4 = st.columns(4, gap="small")
-        with col1 : 
-            gen_plan = st.button("Generate Plan")
             
-        with col2 : 
-            # The way to display key points is TBD, in par text_area or in different text_area to keep them when paragraph is generated
-            gen_key_points = st.button("Generate content points")
+        gen_plan, gen_xtros, gen_key_points, gen_paragraphs = init_gen_buttons()
             
-        with col3 : 
-            gen_paragraphs = st.button("Generate paragraphs")
-        
-        with col4 : 
-            gen_xtros = st.button("Generate intro and outro")
-            
-        
         st.divider()
 
         #Buttons click actions, could be replaced with on_click func to go further
@@ -155,94 +252,24 @@ if __name__ == "__main__" :
         if gen_paragraphs : 
             generate_paragraphs()
 
-        if "title" in st.session_state : 
-            with st.expander("Image to use") : 
-                if "uploaded_files" in st.session_state : 
-                    st.selectbox(label="Image to use", options=[None] + [img.name for img in st.session_state["uploaded_files"]], key="img_title")
-                    st.text_input(label="Image description", key="img_title_description")
-                else : 
-                    st.write("No uploaded image to use")
-
-            st.text_area(label="Title", value=st.session_state["title"], key="title")
+        init_title()
 
         st.divider()
 
-        if "intro" in st.session_state : 
-            with st.expander("Image to use") : 
-                if "uploaded_files" in st.session_state : 
-                    st.selectbox(label="Image to use", options=[None] + [img.name for img in st.session_state["uploaded_files"]], key="img_intro")
-                    st.text_input(label="Image description", key="img_intro_description")
-                else : 
-                    st.write("No uploaded image to use")
-
-            st.text_input(label="Introduction", value="Introduction", key="intro_title")
-
-            col_intro, col_buttons = st.columns(2)
-            with col_intro : 
-                st.text_area(label="a", value=st.session_state["intro"], label_visibility="hidden", key="intro")
-            with col_buttons : 
-                st.text_area(label="Modification instructions", key=f"prompt_modif_intro")
-                st.button("Modify paragraph", on_click=modify_xtro, kwargs={"xtro":"intro"}, key=f"modify_button_intro")
+        init_intro()
 
         st.divider()
 
-        for idx in range(sum([1 for i in st.session_state if "header" in i])) : 
-            with st.expander("Image to use") :
-                if "uploaded_files" in st.session_state :  
-                    st.selectbox(label="Image to use", options=[None] + [img.name for img in st.session_state["uploaded_files"]], key=f"img_par{idx}")
-                    st.text_input(label="Image description", key=f"img_par{idx}_description")
-                else : 
-                    st.write("No uploaded image to use")
+        init_paragraphs()
 
-            st.text_input(f"Header {idx}", key=f"header{idx}")
-            # Broken initial value feature, we will have to do with smthg else to be able to display the generated value for this feature and be able to modify it
-            # st_tags(label="Key points to adress", key=f"par{idx}_tags")
-            # st.selectbox(label="Key points to address : ", options=[""]*10)
-            key_points_list = get_keypoints()
-            st.multiselect(label="Key points to address : ", options = key_points_list, default = key_points_list, key=f"key_points_{idx}")
-            col_text, col_buttons = st.columns(2)
-            with col_text :
-                st.text_area(label = "a", label_visibility="hidden", key=f"paragraph{idx}")
-            with col_buttons : 
-                st.text_area(label="Modification instructions", key=f"prompt_modif_par{idx}")
-                st.button("Modify paragraph", on_click=modify_paragraph, kwargs={"idx":idx}, key=f"modify_button_{idx}")
-            st.divider()
-
-        if "outro" in st.session_state : 
-            with st.expander("Image to use") : 
-                if "uploaded_files" in st.session_state : 
-                    st.selectbox(label="Image to use", options=[None] + [img.name for img in st.session_state["uploaded_files"]], key=f"img_outro")
-                    st.text_input(label="Image description", key="img_outro_description")
-                else : 
-                    st.write("No uploaded image to use")
-
-            st.text_input(label="Conclusion", value="Conclusion", key="outro_title")
-            col_outro, col_buttons = st.columns(2)
-            with col_outro : 
-                st.text_area(label="a", value=st.session_state["outro"], label_visibility="hidden", key="outro")
-            with col_buttons : 
-                st.text_area(label="Modification instructions", key=f"prompt_modif_outro")
-                st.button("Modify paragraph", on_click=modify_xtro, kwargs={"xtro":"outro"}, key=f"modify_button_outro")
-
-        with st.expander("Image to use") : 
-            if "uploaded_files" in st.session_state : 
-                st.text_input(label="Image to use", key="img_end")
-                st.text_input(label="Image description", key="img_end_description")
-            else : 
-                    st.write("No uploaded image to use")
+        init_outro()
 
         st.divider()
 
         draft = st.toggle("Draft/Public", value=False)
         publish = st.button("Publish", on_click=publish_article)
 
-        # print(draft)
-    
         [print(k, st.session_state[k]) for k in sorted(st.session_state)]
-
-        # needed output dict : 
-
-        # auto_post(output_dict, key)
 
     with tab_preview : 
         headers_keys = [key for key in sorted(st.session_state) if "header" in key]
@@ -260,7 +287,7 @@ if __name__ == "__main__" :
         st.markdown(st.session_state["intro"])
 
         for header_key, par_key in zip(headers_keys, par_keys) : 
-            if f"img_par{idx}" in st.session_state and st.session_state[f"{par_key}"] is not None : 
+            if f"img_{par_key}" in st.session_state and st.session_state[f"{par_key}"] is not None : 
                 st.image([obj for obj in st.session_state["uploaded_files"] if obj.name == st.session_state[f"{par_key}"]])
             st.markdown("## " + st.session_state[header_key])
             st.markdown(st.session_state[par_key])
@@ -273,6 +300,9 @@ if __name__ == "__main__" :
 
         if "img_end" in st.session_state and st.session_state["img_end"] is not None : 
             st.image([obj for obj in st.session_state["uploaded_files"] if obj.name == st.session_state["img_end"]])
+
+    with tab_advices : 
+        st.markdown("# Tab to display writing advices : \n * Keywords to use (per paragraph, with volumes ?) \n * Concurrents analysis : \n \t * Theme adressed by concurrents on subsequent topic/keywords \n \t * Themes not adressed by concurrent and that make original content \n * Possible angles to use for this topic")
 
     with tab_upload : 
         st.file_uploader("Upload image", accept_multiple_files=True, key="uploaded_files")
