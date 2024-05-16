@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_tags import st_tags #https://github.com/gagan3012/streamlit-tags/tree/master
 
 import random 
+import time
 from openai import OpenAI
 
 from secret import get_openai_api_key
@@ -21,29 +22,77 @@ st.set_page_config(
    initial_sidebar_state="expanded",
 )
 
-def undo_action() : 
-    # Method should work but bc of a multiple reloads (3) at each state change, try to consider the last one is not functioning
-    # Idk from where it comes
-    st.session_state = st.session_state["previous_state"]
+# def undo_action() : 
+#     # Method should work but bc of a multiple reloads (3) at each state change, try to consider the last one is not functioning
+#     # Idk from where it comes
+#     st.session_state = st.session_state["previous_state"]
+
+def completion(messages) :
+    response = client.chat.completions.create(model=st.session_state["model"], messages=messages)
+    return response
 
 def delete_paragraph(idx) : 
     idx_to_remove = st.session_state["headers_idx_order"].index(idx)
     st.session_state["headers_idx_order"].pop(idx_to_remove)
 
-def generate_plan(input) -> list[str] : 
-    generate_title(st.session_state["search_intent"])
-    generate_plan_parts(st.session_state["search_intent"])
+def generate_plan() -> list[str] : 
+    generate_title()
+    generate_headers()
 
 
-def generate_plan_parts(_input) : 
+def generate_headers() : 
+    title = st.session_state["title"]
+    intention = st.session_state["search_intent"]
+    language = st.session_state["language"]
+
+    framing = f"You are a professionnal copywriter and you can write catchy and SEO optimized" \
+              f"blog posts plans. Your overall goal is to give the maximize the helpfulnes of the blog post"
+
+    instructions = f"You goal is to write the titles of the different parts of the plan for a blog article." \
+                   f"The plan parts have to coherently match the title '{title}'. The plan parts must be designed" \
+                   f"to answer the search intent of the reader '{intention}'. Make sure to design the plan parts to" \
+                   f"tell a catchy story and to avoid redundancy across the parts. Design the plan to make the" \
+                   f"article effectively able to help readers to achieve a given task or to get specific" \
+                   f"informations. Answer only with the plan parts redacted in {language} with numbered bullets" \
+                   f"starting from 1., without any conversation nor precisions nor explications" 
+    
+    messages = [{"role":"system", "content":framing},{"role":"user", "content":instructions}]
+
+    try :
+      response = completion(messages)
+      resp = response.choices[0].message.content
+      parts_list = []
+      for line in resp.split("\n") :
+        if line != "" :
+          parts_list.append(line)
+    except : 
+      st.warning("API call denied, sleeping for 5s and retrying")
+      time.sleep(5)
+      generate_headers()
+
      # The 0 idx should be left free to allow add paragraph button to work in intro
-    for idx in range(0, 5) : 
-        st.session_state[f"header{idx}"] = _input + str(idx)
-    st.session_state["headers_idx_order"] = list(range(0, 5))
+    for idx, header in enumerate(parts_list) : 
+        st.session_state[f"header{idx}"] = header
+    st.session_state["headers_idx_order"] = list(range(len(parts_list)))
 
 
-def generate_title(input) -> str: 
-    st.session_state["title"] = "This is the title"
+def generate_title() : 
+    intention = st.session_state["search_intent"]
+    language = st.session_state["language"]
+
+    framing = "You are a professionnal copywriter and you can write catchy blog post titles"
+    instructions = f"Your goal is to write an catchy blog post title answering to the search intent '{intention}'." \
+                   f"Write the title in {language}. Answer only with the title without any conversation nor" \
+                   f"precisions nor explications"
+    messages = [{"role":"system", "content":framing},{"role":"user", "content":instructions}]
+    try :
+      response = completion(messages)
+      resp = response.choices[0].message.content
+      st.session_state["title"] = resp.replace('"', "")
+    except : 
+      st.warning("API call denied, sleeping for 5s and retrying")
+      time.sleep(5)
+      generate_title()
 
 
 def generate_intro() :
@@ -193,7 +242,6 @@ def add_paragraph(idx) :
 def init_open_ai_client() : 
     print('Init OPENAI client')
     client = OpenAI(organization='org-RodcoqHxocoaCNHWBLlJGpaX',
-                    project='blog-content-gen-ui',
                     api_key = get_openai_api_key()
                    )
     return client 
@@ -243,8 +291,9 @@ if __name__ == "__main__" :
 
     #                         "slug":"",
     #                         }
-    st.session_state["previous_state"] = st.session_state
-    st.button("Undo", on_click=undo_action)
+    # st.session_state["previous_state"] = st.session_state
+    # st.button("Undo", on_click=undo_action)
+
     client = init_open_ai_client()
 
     # Add an undo button that replace the current st.session_state with the stored previous one
@@ -263,7 +312,7 @@ if __name__ == "__main__" :
 
         #Buttons click actions, could be replaced with on_click func to go further
         if gen_plan : 
-            generate_plan(st.session_state["search_intent"])
+            generate_plan()
         
         if gen_xtros : 
             generate_intro()
