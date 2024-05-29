@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ article.title }}</title>
+</head>
+<body>
+    <h1>{{ article.title }}</h1>
+    <p>{{ article.intro }}</p>
+    <div>
+        {% for paragraph in article.paragraphs %}
+            <p>{{ paragraph }}</p>
+        {% endfor %}
+    </div>
+    <p>{{ article.outro }}</p>
+</body>
+</html>
